@@ -44,12 +44,11 @@ func GetProductID(w http.ResponseWriter, r *http.Request) {
 	for _, p := range Products {
 		if strconv.Itoa(p.ID) == key {
 			if err := json.NewEncoder(w).Encode(p); err != nil {
-				log.Fatal(err)
+				log.Println(http.StatusInternalServerError)
 			}
-		} else {
-			log.Println("Product not found error:")
-			fmt.Println(http.StatusNotFound)
 		}
+		log.Println("Product not found error:")
+		fmt.Println(http.StatusNotFound)
 	}
 }
 
@@ -65,18 +64,21 @@ func DeleteProduct(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if err := json.NewEncoder(w).Encode(Products); err != nil {
-		log.Fatal(err)
+		log.Println(http.StatusInternalServerError)
 	}
 }
 
 func AddNewProduct(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var product Product
-	_ = json.NewDecoder(r.Body).Decode(&product)
+	if err := json.NewDecoder(r.Body).Decode(&product); err != nil {
+		log.Println(http.StatusInternalServerError)
+	}
+
 	product.ID = len(Products) + 2
 	Products = append(Products, product)
 	if err := json.NewEncoder(w).Encode(product); err != nil {
-		log.Fatal(err)
+		log.Println(http.StatusInternalServerError)
 	}
 }
 
@@ -88,15 +90,19 @@ func UpdateProduct(w http.ResponseWriter, r *http.Request) {
 		if strconv.Itoa(p.ID) == id {
 			Products = append(Products[:i], Products[i+1:]...)
 			var product Product
-			_ = json.NewDecoder(r.Body).Decode(&product)
+			if err := json.NewDecoder(r.Body).Decode(&product); err != nil {
+				log.Println(http.StatusInternalServerError)
+			}
+
 			ID, err := strconv.Atoi(id)
 			if err != nil {
-				log.Fatal(err)
+				log.Println(http.StatusInternalServerError)
 			}
+
 			product.ID = ID
 			Products = append(Products, product)
 			if err = json.NewEncoder(w).Encode(product); err != nil {
-				log.Fatal(err)
+				log.Println(http.StatusInternalServerError)
 			}
 			return
 		}
