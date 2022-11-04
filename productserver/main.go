@@ -3,11 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
+
+	"github.com/gorilla/mux"
 )
 
 type Product struct {
@@ -32,6 +33,7 @@ func InitProduct() {
 
 func GetProducts(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(Products); err != nil {
+		fmt.Println("error occured while encoding")
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 }
@@ -44,11 +46,12 @@ func GetProductID(w http.ResponseWriter, r *http.Request) {
 	for _, p := range Products {
 		if strconv.Itoa(p.ID) == key {
 			if err := json.NewEncoder(w).Encode(p); err != nil {
-				log.Println(http.StatusInternalServerError)
+				fmt.Println("error occured while encoding")
+				w.WriteHeader(http.StatusInternalServerError)
 			}
 		}
-		log.Println("Product not found error:")
-		fmt.Println(http.StatusNotFound)
+		fmt.Println("Product not found. Error:")
+		w.WriteHeader(http.StatusNotFound)
 	}
 }
 
@@ -64,7 +67,8 @@ func DeleteProduct(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if err := json.NewEncoder(w).Encode(Products); err != nil {
-		log.Println(http.StatusInternalServerError)
+		fmt.Println("error occured while encoding")
+		w.WriteHeader(http.StatusInternalServerError)
 	}
 }
 
@@ -72,13 +76,15 @@ func AddNewProduct(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var product Product
 	if err := json.NewDecoder(r.Body).Decode(&product); err != nil {
-		log.Println(http.StatusInternalServerError)
+		fmt.Println("error occured while dencoding")
+		w.WriteHeader(http.StatusInternalServerError)
 	}
 
 	product.ID = len(Products) + 2
 	Products = append(Products, product)
 	if err := json.NewEncoder(w).Encode(product); err != nil {
-		log.Println(http.StatusInternalServerError)
+		fmt.Println("error occured while encoding")
+		w.WriteHeader(http.StatusInternalServerError)
 	}
 }
 
@@ -91,18 +97,21 @@ func UpdateProduct(w http.ResponseWriter, r *http.Request) {
 			Products = append(Products[:i], Products[i+1:]...)
 			var product Product
 			if err := json.NewDecoder(r.Body).Decode(&product); err != nil {
-				log.Println(http.StatusInternalServerError)
+				fmt.Println("error occured while dencoding")
+				w.WriteHeader(http.StatusInternalServerError)
 			}
 
 			ID, err := strconv.Atoi(id)
 			if err != nil {
-				log.Println(http.StatusInternalServerError)
+				fmt.Println("error occured while converting int")
+				w.WriteHeader(http.StatusInternalServerError)
 			}
 
 			product.ID = ID
 			Products = append(Products, product)
 			if err = json.NewEncoder(w).Encode(product); err != nil {
-				log.Println(http.StatusInternalServerError)
+				fmt.Println("error occured while encoding")
+				w.WriteHeader(http.StatusInternalServerError)
 			}
 			return
 		}
