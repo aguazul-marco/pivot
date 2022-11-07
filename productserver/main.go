@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -33,7 +32,7 @@ func InitProduct() {
 
 func GetProducts(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(Products); err != nil {
-		fmt.Println("error occured while encoding")
+		log.Printf("error occured while encoding: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 }
@@ -41,17 +40,20 @@ func GetProducts(w http.ResponseWriter, r *http.Request) {
 func GetProductID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	vars := mux.Vars(r)
-	key := vars["id"]
 
-	for _, p := range Products {
-		if strconv.Itoa(p.ID) == key {
-			if err := json.NewEncoder(w).Encode(p); err != nil {
-				fmt.Println("error occured while encoding")
-				w.WriteHeader(http.StatusInternalServerError)
-			}
-		}
-		fmt.Println("Product not found. Error:")
-		w.WriteHeader(http.StatusNotFound)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		log.Printf("error converting id to int: %v", err)
+	}
+	p := productFinder(id)
+	if p == nil {
+		log.Printf("no product exists with id %v", id)
+		return
+	}
+	if err := json.NewEncoder(w).Encode(p); err != nil {
+		log.Printf("error encoding product: %v", id)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 }
 
@@ -67,7 +69,7 @@ func DeleteProduct(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if err := json.NewEncoder(w).Encode(Products); err != nil {
-		fmt.Println("error occured while encoding")
+		log.Printf("error occured while encoding: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 }
@@ -76,14 +78,14 @@ func AddNewProduct(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var product Product
 	if err := json.NewDecoder(r.Body).Decode(&product); err != nil {
-		fmt.Println("error occured while dencoding")
+		log.Printf("error occured while decoding: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
 	product.ID = len(Products) + 2
 	Products = append(Products, product)
 	if err := json.NewEncoder(w).Encode(product); err != nil {
-		fmt.Println("error occured while encoding")
+		log.Printf("error occured while encoding: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 }
@@ -97,20 +99,20 @@ func UpdateProduct(w http.ResponseWriter, r *http.Request) {
 			Products = append(Products[:i], Products[i+1:]...)
 			var product Product
 			if err := json.NewDecoder(r.Body).Decode(&product); err != nil {
-				fmt.Println("error occured while dencoding")
+				log.Printf("error occured while decoding: %v", err)
 				w.WriteHeader(http.StatusInternalServerError)
 			}
 
-			ID, err := strconv.Atoi(id)
+			i, err := strconv.Atoi(id)
 			if err != nil {
-				fmt.Println("error occured while converting int")
+				log.Printf("error occured while converting int: %v", err)
 				w.WriteHeader(http.StatusInternalServerError)
 			}
 
-			product.ID = ID
+			product.ID = i
 			Products = append(Products, product)
 			if err = json.NewEncoder(w).Encode(product); err != nil {
-				fmt.Println("error occured while encoding")
+				log.Printf("error occured while encoding: %v", err)
 				w.WriteHeader(http.StatusInternalServerError)
 			}
 			return
@@ -118,16 +120,25 @@ func UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func productFinder(id int) *Product {
+	for _, p := range Products {
+		if p.ID == id {
+			return &p
+		}
+	}
+	return nil
+}
+
 func main() {
 
 	InitProduct()
 
 	r := mux.NewRouter()
-	r.HandleFunc("/products", GetProducts).Methods("GET")
-	r.HandleFunc("/products/{id}", GetProductID).Methods("GET")
-	r.HandleFunc("/products/{id}", DeleteProduct).Methods("DELETE")
 	r.HandleFunc("/products/{id}", AddNewProduct).Methods("POST")
 	r.HandleFunc("/products/{id}", UpdateProduct).Methods("PUT")
+	r.HandleFunc("/products/{id}", DeleteProduct).Methods("DELETE")
+	r.HandleFunc("/products/{id}", GetProductID).Methods("GET")
+	r.HandleFunc("/products", GetProducts).Methods("GET")
 
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
