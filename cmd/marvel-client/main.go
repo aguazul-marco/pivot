@@ -1,11 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
 	"github.com/aguazul-marco/pivot/marvel"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/joho/godotenv"
 )
 
@@ -20,10 +20,13 @@ func main() {
 
 	client := marvel.NewClient(pubKey, privKey)
 
-	character, err := client.GetCharacter(5)
+	characters, err := client.GetCharacters(5)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	spew.Dump(character)
+	for _, character := range characters {
+		fmt.Printf("Character: %v\nDescription: %v\n\n", character.Name, character.Description)
+	}
+
 }

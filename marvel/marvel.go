@@ -45,7 +45,7 @@ func NewClient(pubKey, privKey string) Client {
 		PubKey:  pubKey,
 		PrivKey: privKey,
 		HttpClient: &http.Client{
-			Timeout: 10 * time.Second,
+			Timeout: 15 * time.Second,
 		},
 	}
 }
@@ -62,7 +62,7 @@ func (c *Client) signURL(url string) string {
 	return fmt.Sprintf("%s&ts=%d&apikey=%s&hash=%s", url, ts, c.PubKey, hash)
 }
 
-func (c *Client) GetCharacter(limit int) ([]Character, error) {
+func (c *Client) GetCharacters(limit int) ([]Character, error) {
 	url := c.BaseURL + fmt.Sprintf("/characters?limit=%d", limit)
 	url = c.signURL(url)
 
