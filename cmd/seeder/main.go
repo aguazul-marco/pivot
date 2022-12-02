@@ -48,7 +48,25 @@ func main() {
 		return
 	}
 
-	if err := seed(db); err != nil {
+	tx, err := db.Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+	stmt, err := tx.Prepare("INSERT INTO products (name, price) VALUES(?, ?)")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+
+	for _, product := range Products {
+		_, err = stmt.Exec(product.Name, product.Price)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
 		log.Fatal(err)
 	}
 
@@ -65,7 +83,8 @@ func main() {
 		var p Product
 		err = rows.Scan(&p.ID, &p.Name, &p.Price)
 		if err != nil {
-			log.Fatal(err)
+			fmt.Print(err)
+			return
 		}
 		products = append(products, p)
 	}
@@ -80,33 +99,4 @@ func main() {
 		fmt.Printf("ID: %v\nName: %v\nPrice: %v\n", p.ID, p.Name, p.Price)
 	}
 
-}
-
-func seed(db *sql.DB) error {
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-	stmt, err := tx.Prepare("INSERT INTO products (name, price) VALUES(?, ?)")
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-
-	for i := 0; i < 5; {
-		for _, product := range Products {
-			_, err = stmt.Exec(product.Name, product.Price)
-			if err != nil {
-				return err
-			}
-			i++
-		}
-
-	}
-	err = tx.Commit()
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
