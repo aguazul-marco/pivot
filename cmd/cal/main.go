@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/aguazul-marco/pivot/calculator"
 )
 
@@ -16,8 +17,11 @@ func main() {
 		fmt.Println(divideResult)
 	}
 
+	powResult := calculator.Pow(2, 3)
+
 	fmt.Println(addResult)
 	fmt.Println(subResult)
 	fmt.Println(multiplyResult)
+	fmt.Println(powResult)
 
 }
