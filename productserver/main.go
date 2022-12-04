@@ -21,7 +21,7 @@ type Product struct {
 
 var db *sql.DB
 
-func InitProduct(path string) *sql.DB {
+func InitProducts(path string) *sql.DB {
 	db, err := sql.Open("sqlite3", path)
 	if err != nil {
 		log.Fatal(err)
@@ -271,7 +271,7 @@ func main() {
 	flag.StringVar(&dbFile, "db", "product.db", "find products.db")
 	flag.Parse()
 
-	db = InitProduct(dbFile)
+	db = InitProducts(dbFile)
 
 	r := mux.NewRouter()
 	r.HandleFunc("/products", AddNewProduct).Methods("POST")
