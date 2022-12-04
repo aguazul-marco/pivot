@@ -21,12 +21,8 @@ type Product struct {
 
 var db *sql.DB
 
-func InitProduct() *sql.DB {
-	var dbFile string
-	flag.StringVar(&dbFile, "db", "product.db", "find products.db")
-	flag.Parse()
-
-	db, err := sql.Open("sqlite3", dbFile)
+func InitProduct(path string) *sql.DB {
+	db, err := sql.Open("sqlite3", path)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -96,22 +92,15 @@ func GetProductID(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Not a numeric value: %v", err)
 	}
 
-	rows, err := db.Query("SELECT id, name, price FROM products WHERE id = ?", id)
-	if err != nil {
+	row := db.QueryRow("SELECT id, name, price FROM products WHERE id = ?", id)
+	var p Product
+	switch err := row.Scan(&p.ID, &p.Name, &p.Price); err {
+	case sql.ErrNoRows:
+		w.WriteHeader(http.StatusNotFound)
+		log.Println(err)
+	default:
 		w.WriteHeader(http.StatusBadRequest)
 		log.Println(err)
-		return
-	}
-
-	defer rows.Close()
-
-	var p Product
-	for rows.Next() {
-		err := rows.Scan(&p.ID, &p.Name, &p.Price)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			log.Println(err)
-		}
 	}
 
 	if p.ID == 0 && p.Name == "" {
@@ -277,18 +266,12 @@ func UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func productFinder(id int, Products []Product) *Product {
-	for _, p := range Products {
-		if p.ID == id {
-			return &p
-		}
-	}
-	return nil
-}
-
 func main() {
+	var dbFile string
+	flag.StringVar(&dbFile, "db", "product.db", "find products.db")
+	flag.Parse()
 
-	db = InitProduct()
+	db = InitProduct(dbFile)
 
 	r := mux.NewRouter()
 	r.HandleFunc("/products", AddNewProduct).Methods("POST")
