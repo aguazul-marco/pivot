@@ -20,11 +20,11 @@ func initProducts(path string) ([]Product, error) {
 	var products []Product
 	data, err := os.ReadFile("products.json")
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	if err = json.Unmarshal(data, &products); err != nil {
-		return []Product{}, err
+		return nil, err
 	}
 
 	return products, nil
