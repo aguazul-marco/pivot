@@ -18,19 +18,24 @@ type Product struct {
 
 var Products []Product
 
-func initProduct() {
+func initProducts(path string) ([]Product, error) {
 	data, err := os.ReadFile("products.json")
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	if err = json.Unmarshal(data, &Products); err != nil {
-		log.Fatal(err)
+		return []Product{}, err
 	}
+
+	return Products, nil
 }
 
 func main() {
-	initProduct()
+	products, err := initProducts("products.json")
+	if err != nil {
+		log.Fatal(err)
+	}
 	os.Remove("product.db")
 
 	db, err := sql.Open("sqlite3", "product.db")
@@ -58,7 +63,7 @@ func main() {
 	}
 	defer stmt.Close()
 
-	for _, product := range Products {
+	for _, product := range products {
 		_, err = stmt.Exec(product.Name, product.Price)
 		if err != nil {
 			log.Fatal(err)
@@ -77,7 +82,7 @@ func main() {
 
 	defer rows.Close()
 
-	var products []Product
+	var newProducts []Product
 
 	for rows.Next() {
 		var p Product
@@ -86,16 +91,14 @@ func main() {
 			fmt.Print(err)
 			return
 		}
-		products = append(products, p)
+		newProducts = append(newProducts, p)
 	}
 	err = rows.Err()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	Products = products
-
-	for _, p := range Products {
+	for _, p := range newProducts {
 		fmt.Printf("ID: %v\nName: %v\nPrice: %v\n", p.ID, p.Name, p.Price)
 	}
 
