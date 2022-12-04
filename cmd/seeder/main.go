@@ -16,19 +16,18 @@ type Product struct {
 	Price float64 `json:"price"`
 }
 
-var Products []Product
-
 func initProducts(path string) ([]Product, error) {
+	var products []Product
 	data, err := os.ReadFile("products.json")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if err = json.Unmarshal(data, &Products); err != nil {
+	if err = json.Unmarshal(data, &products); err != nil {
 		return []Product{}, err
 	}
 
-	return Products, nil
+	return products, nil
 }
 
 func main() {
@@ -82,8 +81,6 @@ func main() {
 
 	defer rows.Close()
 
-	var newProducts []Product
-
 	for rows.Next() {
 		var p Product
 		err = rows.Scan(&p.ID, &p.Name, &p.Price)
@@ -91,15 +88,11 @@ func main() {
 			fmt.Print(err)
 			return
 		}
-		newProducts = append(newProducts, p)
+		fmt.Println(p.ID, p.Name, p.Price)
 	}
 	err = rows.Err()
 	if err != nil {
 		log.Fatal(err)
-	}
-
-	for _, p := range newProducts {
-		fmt.Printf("ID: %v\nName: %v\nPrice: %v\n", p.ID, p.Name, p.Price)
 	}
 
 }
