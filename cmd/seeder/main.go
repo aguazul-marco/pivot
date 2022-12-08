@@ -35,7 +35,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	os.Remove("product.db")
+
+	if err := os.Remove("product.db"); err != nil {
+		log.Fatal(err)
+	}
 
 	db, err := sql.Open("sqlite3", "product.db")
 	if err != nil {
