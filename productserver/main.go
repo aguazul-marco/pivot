@@ -21,19 +21,19 @@ type Product struct {
 
 var db *sql.DB
 
-func InitProducts(path string) *sql.DB {
+func InitProducts(path string) (*sql.DB, error) {
 	db, err := sql.Open("sqlite3", path)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	if err := db.Ping(); err != nil {
-		fmt.Printf("Could not connect with database: %v", err)
+		return nil, err
 	}
 
 	fmt.Printf("Connected with database successfully\n")
 
-	return db
+	return db, nil
 }
 
 func GetProducts(w http.ResponseWriter, r *http.Request) {
@@ -103,7 +103,7 @@ func GetProductID(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	if p.ID == 0 && p.Name == "" {
+	if err := Validate(p); err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		log.Printf("No product exists with id %v", id)
 		return
@@ -115,7 +115,6 @@ func GetProductID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println("OK")
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -126,19 +125,19 @@ func DeleteProduct(w http.ResponseWriter, r *http.Request) {
 
 	tx, err := db.Begin()
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusInternalServerError)
 		log.Println(err)
 	}
 	stmt, err := tx.Prepare("DELETE FROM products WHERE id = ?")
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusInternalServerError)
 		log.Println(err)
 	}
 	defer stmt.Close()
 
 	results, err := stmt.Exec(id)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusInternalServerError)
 		log.Println(err)
 	}
 
@@ -149,17 +148,16 @@ func DeleteProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusInternalServerError)
 		log.Println(err)
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusInternalServerError)
 		log.Println(err)
 	}
 
-	fmt.Println("OK")
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -172,36 +170,35 @@ func AddNewProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if p.Name == "" || p.Price == 0 {
+	if err := Validate(p); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	tx, err := db.Begin()
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusInternalServerError)
 		log.Println(err)
 	}
 	stmt, err := tx.Prepare("INSERT INTO products (name, price) VALUES (?,?)")
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusInternalServerError)
 		log.Println(err)
 	}
 	defer stmt.Close()
 
 	_, err = stmt.Exec(p.Name, p.Price)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusInternalServerError)
 		log.Println(err)
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusInternalServerError)
 		log.Println(err)
 	}
 
-	fmt.Println("Created")
 	w.WriteHeader(http.StatusCreated)
 }
 
@@ -222,26 +219,26 @@ func UpdateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if p.Name == "" || p.Price == 0 {
+	if err := Validate(p); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	tx, err := db.Begin()
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusInternalServerError)
 		log.Println(err)
 	}
 	stmt, err := tx.Prepare("UPDATE products SET name = ?, price = ? WHERE id = ?")
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusInternalServerError)
 		log.Println(err)
 	}
 	defer stmt.Close()
 
 	result, err := stmt.Exec(p.Name, p.Price, id)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusInternalServerError)
 		log.Println(err)
 	}
 
@@ -252,18 +249,24 @@ func UpdateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusInternalServerError)
 		log.Println(err)
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusInternalServerError)
 		log.Println(err)
 	}
 
-	fmt.Println("Updated")
 	w.WriteHeader(http.StatusOK)
+}
+
+func Validate(p Product) (err error) {
+	if p.ID == 0 || p.Name == "" {
+		return err
+	}
+	return nil
 }
 
 func main() {
@@ -271,8 +274,12 @@ func main() {
 	flag.StringVar(&dbFile, "db", "product.db", "find products.db")
 	flag.Parse()
 
-	db = InitProducts(dbFile)
+	data, err := InitProducts(dbFile)
+	if err != nil {
+		log.Fatal(err)
+	}
 
+	db = data
 	r := mux.NewRouter()
 	r.HandleFunc("/products", AddNewProduct).Methods("POST")
 	r.HandleFunc("/products/{id}", UpdateProduct).Methods("PUT")
