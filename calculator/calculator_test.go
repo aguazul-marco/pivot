@@ -2,8 +2,9 @@ package calculator_test
 
 import (
 	"fmt"
-	"github.com/aguazul-marco/pivot/calculator"
 	"testing"
+
+	"github.com/aguazul-marco/pivot/calculator"
 )
 
 func TestAdd(t *testing.T) {
@@ -100,6 +101,30 @@ func TestDivide(t *testing.T) {
 				fmt.Println(err)
 			} else if got != test.want {
 				t.Errorf("got %q, wanted %q", got, test.want)
+			}
+		})
+	}
+}
+
+func TestPow(t *testing.T) {
+	tests := []struct {
+		name   string
+		inputA float64
+		inputB float64
+		want   float64
+	}{
+		{"testOne", 2, 3, 8},
+		{"testTwo", 3, 2, 9},
+		{"testThree", 5, 4, 625},
+		{"testFour", 2, 4, 16},
+		{"zeros", 0, 0, 1},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := calculator.Pow(test.inputA, test.inputB)
+			if got != test.want {
+				t.Errorf("got %v, wanted %v", got, test.want)
 			}
 		})
 	}
