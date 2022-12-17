@@ -8,12 +8,9 @@ var InfoFlag bool
 var GetCmd = &cobra.Command{
 	Use:     "get",
 	Aliases: []string{"Get", "GET"},
-	Short:   "get station information",
+	Short:   "Use the commands retrieve stations",
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 
 	},
-}
-
-func init() {
 }

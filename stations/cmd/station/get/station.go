@@ -8,7 +8,7 @@ import (
 var StationCmd = &cobra.Command{
 	Use:     "station",
 	Aliases: []string{"Station", "stat"},
-	Short:   "searching for station using the name or part of the name",
+	Short:   "Retrieve a station using the name",
 	Args:    cobra.RangeArgs(1, 2),
 	Run: func(cmd *cobra.Command, args []string) {
 		input := args[0]
